@@ -1,7 +1,13 @@
 
-import { useMemo, useReducer, useState } from "react";
+import {
+    useCallback,
+    useMemo,
+    useReducer,
+    useState,
+} from "react";
 
 import { products } from "./data";
+
 import Header from "./components/Header";
 import SearchBar from "./components/SearchBar";
 import ProductList from "./components/ProductList";
@@ -14,6 +20,7 @@ import {
 } from "./cartReducer";
 
 import "./App.css";
+import React from "react";
 
 function App() {
     const [query, setQuery] = useState("");
@@ -24,11 +31,11 @@ function App() {
         initialCart
     );
 
-    // Поиск и фильтр из первого шага
+    // Поиск и фильтрация
     const visibleProducts = useMemo(() => {
         const q = query.trim().toLowerCase();
 
-        return products.filter((product) => {
+        return products.filter((product: { title: string; inStock: any; }) => {
             const matchesSearch = product.title
                 .toLowerCase()
                 .includes(q);
@@ -41,47 +48,59 @@ function App() {
     }, [query, onlyInStock]);
 
     // Общее количество товаров
-    const totalCount = cart.items.reduce(
-        (sum, item) => sum + item.qty,
-        0
+    const totalCount = useMemo(() => {
+        return cart.items.reduce(
+            (sum, item) => sum + item.qty,
+            0
+        );
+    }, [cart.items]);
+
+    // Общая стоимость
+    const totalPrice = useMemo(() => {
+        return cart.items.reduce(
+            (sum, item) => sum + item.price * item.qty,
+            0
+        );
+    }, [cart.items]);
+
+    // Количество каждого товара по id
+    const qtyById = useMemo(() => {
+        return Object.fromEntries(
+            cart.items.map((item) => [
+                item.id,
+                item.qty,
+            ])
+        ) as Record<number, number>;
+    }, [cart.items]);
+
+    // Стабильная функция добавления
+    const handleAdd = useCallback(
+        (product: Product) => {
+            dispatch({
+                type: "add",
+                product,
+            });
+        },
+        []
     );
 
-    // Общая стоимость корзины
-    const totalPrice = cart.items.reduce(
-        (sum, item) => sum + item.price * item.qty,
-        0
+    // Стабильная функция удаления
+    const handleRemove = useCallback(
+        (id: number) => {
+            dispatch({
+                type: "remove",
+                id,
+            });
+        },
+        []
     );
 
-    // Количество каждого товара по его id
-    const qtyById = Object.fromEntries(
-        cart.items.map((item) => [
-            item.id,
-            item.qty,
-        ])
-    ) as Record<number, number>;
-
-    // Добавление товара
-    function handleAdd(product: Product) {
-        dispatch({
-            type: "add",
-            product,
-        });
-    }
-
-    // Удаление товара
-    function handleRemove(id: number) {
-        dispatch({
-            type: "remove",
-            id,
-        });
-    }
-
-    // Очистка корзины
-    function handleClear() {
+    // Стабильная функция очистки
+    const handleClear = useCallback(() => {
         dispatch({
             type: "clear",
         });
-    }
+    }, []);
 
     return (
         <main>

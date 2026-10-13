@@ -1,4 +1,7 @@
 
+import React from "react";
+import { memo } from "react";
+
 export type Product = {
     id: number;
     title: string;
@@ -19,6 +22,8 @@ function ProductCard({
                          onAdd,
                          onRemove,
                      }: ProductCardProps) {
+    console.log("render", product.id);
+
     return (
         <div className="product-card">
             <h3>{product.title}</h3>
@@ -51,4 +56,4 @@ function ProductCard({
     );
 }
 
-export default ProductCard;
+export default memo(ProductCard);
