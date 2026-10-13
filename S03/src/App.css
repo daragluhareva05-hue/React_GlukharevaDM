@@ -60,3 +60,33 @@ button:disabled {
         flex-wrap: wrap;
     }
 }
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.cart-summary {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.product-card button {
+    margin-right: 8px;
+    margin-bottom: 8px;
+}
+
+@media (max-width: 700px) {
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .cart-summary {
+        flex-wrap: wrap;
+    }
+}
+
