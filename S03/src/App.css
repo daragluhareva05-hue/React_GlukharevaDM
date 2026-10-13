@@ -90,3 +90,8 @@ button:disabled {
     }
 }
 
+.pending-message {
+    color: #555;
+    font-size: 14px;
+    margin: 12px 0;
+}

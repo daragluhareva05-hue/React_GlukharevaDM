@@ -1,9 +1,8 @@
 
 import {
-    useCallback,
     useMemo,
-    useReducer,
     useState,
+    useTransition,
 } from "react";
 
 import { products } from "./data";
@@ -12,30 +11,47 @@ import Header from "./components/Header";
 import SearchBar from "./components/SearchBar";
 import ProductList from "./components/ProductList";
 
-import type { Product } from "./components/ProductCard";
-
-import {
-    cartReducer,
-    initialCart,
-} from "./cartReducer";
+import { useCart } from "./hooks/useCart";
 
 import "./App.css";
-import React from "react";
 
 function App() {
+    // Срочное состояние: текст в поле поиска
     const [query, setQuery] = useState("");
+
+    // Несрочное состояние: запрос для фильтрации
+    const [filterQuery, setFilterQuery] = useState("");
+
     const [onlyInStock, setOnlyInStock] = useState(false);
 
-    const [cart, dispatch] = useReducer(
-        cartReducer,
-        initialCart
-    );
+    const [isPending, startTransition] = useTransition();
 
-    // Поиск и фильтрация
+    // Вся логика корзины находится в useCart
+    const {
+        add,
+        remove,
+        clear,
+        totalCount,
+        totalPrice,
+        qtyById,
+    } = useCart();
+
+    // Обработчик поиска
+    function handleQueryChange(value: string) {
+        // Сразу обновляем текст в input
+        setQuery(value);
+
+        // Фильтрацию обновляем с низким приоритетом
+        startTransition(() => {
+            setFilterQuery(value);
+        });
+    }
+
+    // Поиск и фильтрация товаров
     const visibleProducts = useMemo(() => {
-        const q = query.trim().toLowerCase();
+        const q = filterQuery.trim().toLowerCase();
 
-        return products.filter((product: { title: string; inStock: any; }) => {
+        return products.filter((product) => {
             const matchesSearch = product.title
                 .toLowerCase()
                 .includes(q);
@@ -45,85 +61,36 @@ function App() {
 
             return matchesSearch && matchesStock;
         });
-    }, [query, onlyInStock]);
-
-    // Общее количество товаров
-    const totalCount = useMemo(() => {
-        return cart.items.reduce(
-            (sum, item) => sum + item.qty,
-            0
-        );
-    }, [cart.items]);
-
-    // Общая стоимость
-    const totalPrice = useMemo(() => {
-        return cart.items.reduce(
-            (sum, item) => sum + item.price * item.qty,
-            0
-        );
-    }, [cart.items]);
-
-    // Количество каждого товара по id
-    const qtyById = useMemo(() => {
-        return Object.fromEntries(
-            cart.items.map((item) => [
-                item.id,
-                item.qty,
-            ])
-        ) as Record<number, number>;
-    }, [cart.items]);
-
-    // Стабильная функция добавления
-    const handleAdd = useCallback(
-        (product: Product) => {
-            dispatch({
-                type: "add",
-                product,
-            });
-        },
-        []
-    );
-
-    // Стабильная функция удаления
-    const handleRemove = useCallback(
-        (id: number) => {
-            dispatch({
-                type: "remove",
-                id,
-            });
-        },
-        []
-    );
-
-    // Стабильная функция очистки
-    const handleClear = useCallback(() => {
-        dispatch({
-            type: "clear",
-        });
-    }, []);
+    }, [filterQuery, onlyInStock]);
 
     return (
         <main>
             <Header
                 totalCount={totalCount}
                 totalPrice={totalPrice}
-                onClear={handleClear}
+                onClear={clear}
             />
 
             <SearchBar
                 query={query}
                 onlyInStock={onlyInStock}
-                onQueryChange={setQuery}
+                onQueryChange={handleQueryChange}
                 onStockChange={setOnlyInStock}
             />
+
+            {isPending && (
+                <p className="pending-message">
+                    Обновляем список…
+                </p>
+            )}
 
             <p>Найдено: {visibleProducts.length}</p>
 
             <ProductList
                 products={visibleProducts}
                 qtyById={qtyById}
-                onAdd={handleAdd}
-                onRemove={handleRemove}
+                onAdd={add}
+                onRemove={remove}
             />
         </main>
     );
